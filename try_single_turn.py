@@ -1,4 +1,7 @@
+from typing import cast
+
 import anthropic
+from anthropic.types import MessageParam, TextBlock
 
 from miniclaudecode.config import Config
 from miniclaudecode.context import ConversationContext
@@ -19,8 +22,10 @@ resp = client.messages.create(
     model=cfg.model,
     max_tokens=512,
     system=ctx.system_prompt,
-    messages=ctx.get_api_messages(),
+    messages=cast(list[MessageParam], ctx.get_api_messages()),
 )
 
-print(resp.content[0].text)
-ctx.add_assistant_message(resp.content[0].text)
+block = resp.content[0]
+text = block.text if isinstance(block, TextBlock) else ''
+print(text)
+ctx.add_assistant_message(text)
