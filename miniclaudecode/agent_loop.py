@@ -8,9 +8,10 @@
 '''
 
 import sys
-from typing import Any
+from typing import Any, cast
 
 import anthropic
+from anthropic.types import MessageParam, ToolUnionParam
 
 from .config import Config
 from .context import ConversationContext
@@ -76,8 +77,8 @@ class AgentLoop:
             model=self.config.model,
             max_tokens=8192,
             system=self.context.system_prompt,
-            tools=self.registry.api_schemas(),
-            messages=self.context.get_api_messages(),
+            tools=cast(list[ToolUnionParam], self.registry.api_schemas()),
+            messages=cast(list[MessageParam], self.context.get_api_messages()),
         )
 
     def _parse_response(self, response: Any) -> tuple[list[dict], list[str]]:
