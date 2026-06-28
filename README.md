@@ -1,8 +1,8 @@
 # miniClaudeCode-repro
 
-从零复现 [miniClaudeCode](https://github.com/bcefghj/miniClaudeCode)（Claude Code 核心架构的蒸馏版）的学习项目。**当前进度：阶段三 · 工具系统。**
+从零复现 [miniClaudeCode](https://github.com/bcefghj/miniClaudeCode)（Claude Code 核心架构的蒸馏版）的学习项目。**当前进度：阶段四 · 权限系统。**
 
-> 目标是逐步复现一个具备 agent loop + 工具调用 + 权限 + 多轮上下文管理的 mini agent。本仓库按阶段提交，当前已含「地基 + 主循环 + 工具系统」，后续阶段（权限、prompt + CLI）会陆续补齐。
+> 目标是逐步复现一个具备 agent loop + 工具调用 + 权限 + 多轮上下文管理的 mini agent。本仓库按阶段提交，当前已含「地基 + 主循环 + 工具系统 + 权限」，后续阶段（prompt + CLI 收口）会陆续补齐。
 
 ## 当前内容
 
@@ -19,11 +19,11 @@
 | 文件 | 作用 |
 | --- | --- |
 | `miniclaudecode/agent_loop.py` | `AgentLoop`：由 tool_use 驱动、`max_turns` 封顶的内层循环；assistant(tool_use) 先入列再回灌 tool_result，多结果批成一条 user 消息（遵 API 交替/配对） |
-| `miniclaudecode/permissions.py` | **stub**：`PermissionGate.check` 永远放行（真实两层权限留待后续阶段） |
-| `miniclaudecode/system_prompt.py` | **stub**：`build_system_prompt` 返回固定串（真实 prompt 构造留待后续阶段） |
+| `miniclaudecode/permissions.py` | stage-2 时为 stub 占位，**已在阶段四实现为真实两层权限**（见阶段四） |
+| `miniclaudecode/system_prompt.py` | **stub**：`build_system_prompt` 返回固定串（真实 prompt 构造留待阶段五） |
 | `try_agent_loop.py` | 用假工具把循环骨架跑通的 stage-2 runner（其依赖的假 `WeatherTool` 已在阶段三换成真实工具系统） |
 
-> 仍标 **stub** 的 `permissions.py` / `system_prompt.py` 是让主循环能 import / 跑通的最小占位，后续阶段（权限、prompt + CLI）会替换成真实现。
+> `system_prompt.py` 仍是 stub（让主循环能 import / 跑通的最小占位），阶段五 prompt + CLI 收口时替换成真实现；`permissions.py` 已在阶段四落地。
 
 **阶段三 · 工具系统**
 
@@ -35,6 +35,14 @@
 | `miniclaudecode/tools/file_write.py` | `FileWriteTool`：写文件、按需建父目录 |
 | `miniclaudecode/tools/list_dir.py` | `ListDirTool`：列目录条目（目录优先排序）——阶段三自定义工具示例 |
 | `try_real_tools.py` | 用真工具集驱动循环的 runner（让 agent 调 `list_dir` / 读写文件） |
+
+**阶段四 · 权限系统**
+
+| 文件 | 作用 |
+| --- | --- |
+| `miniclaudecode/permissions.py` | `PermissionGate`：执行前的两层权限闸门。layer-1 工具自检（`tool.check_permissions`，模式无关、最先短路）；layer-2 操作模式 ASK / AUTO / PLAN。`check()` 返回 `None` 放行 / `ToolResult(is_error)` 拒绝——拒绝走回灌不抛异常，模型可据此改道 |
+| `miniclaudecode/agent_loop.py` | `_execute_tool_calls` 在 `execute()` 前接入 `gate.check`，被拒则跳过执行并把 deny 结果回灌（校验点本阶段生效） |
+| `try_permissions.py` | 权限 runner：只打 `gate.check`、零副作用、无需 API key，打印「工具 × 三模式」判定矩阵 |
 
 ## 运行
 
@@ -70,6 +78,12 @@ python try_agent_loop.py
 
 ```powershell
 python try_real_tools.py
+```
+
+运行权限矩阵（阶段四，无需 API key）：
+
+```powershell
+python try_permissions.py
 ```
 
 ## 说明

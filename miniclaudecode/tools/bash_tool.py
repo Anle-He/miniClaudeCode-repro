@@ -44,7 +44,7 @@ class BashTool(Tool):
 
     def check_permissions(self, params: dict[str, Any]) -> str | None:
         # Layer-1 per-tool self-check: refuse commands hitting the deny-list.
-        # Defined here, but not yet invoked by the loop -- the permission system wires it in later.
+        # Invoked by PermissionGate (layer 1) before execute() -- wired into the loop at stage 4.
         cmd = params.get('command', '')
         for pattern in self.DANGEROUS_PATTERNS:
             if pattern in cmd:
