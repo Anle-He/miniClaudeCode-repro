@@ -1,3 +1,13 @@
+'''Stage-1 runner: the minimal single-turn LLM call (no agent loop, no tools).
+
+Builds a ConversationContext, sends one user message, prints the reply.
+Auth via env (DeepSeek's Anthropic-compatible endpoint):
+  ANTHROPIC_BASE_URL = https://api.deepseek.com/anthropic
+  ANTHROPIC_API_KEY  = <deepseek key>
+
+Run:  python try_single_turn.py
+'''
+
 from typing import cast
 
 import anthropic

@@ -1,6 +1,11 @@
-'''Stage-2 runner: drive the agent loop with one fake tool (get_weather).
+'''Stage-2 runner: exercise the agent loop end-to-end.
 
-Expects auth in env (DeepSeek via its Anthropic-compatible endpoint):
+Originally drove the loop with a fake get_weather tool to test the skeleton; that fake
+tool was removed in stage 3, so this now runs against AgentLoop's default real tool set.
+The weather prompt is a leftover -- with no weather tool, the agent just answers from
+what it has. Kept as the stage-2 artifact.
+
+Auth via env (DeepSeek's Anthropic-compatible endpoint):
   ANTHROPIC_BASE_URL = https://api.deepseek.com/anthropic
   ANTHROPIC_API_KEY  = <deepseek key>
 

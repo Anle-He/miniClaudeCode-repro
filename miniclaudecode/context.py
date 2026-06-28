@@ -72,14 +72,16 @@ class ConversationContext:
 
 
 def load_project_instructions(project_dir: str | Path | None = None) -> str:
-    '''Load CLAUDE.md from the project root'''
+    '''Load CLAUDE.md from the project root (empty string if absent).'''
     if project_dir is None:
         project_dir = Path.cwd()
     else:
         project_dir = Path(project_dir)
-    
+
     claude_md = project_dir / 'CLAUDE.md'
     if claude_md.exists():
-        return claude_md.read_text(errors='replace').strip()
+        # encoding pinned to utf-8 (Windows read_text() would default to cp936/GBK and
+        # mangle a utf-8 CLAUDE.md); errors='replace' only avoids a crash, not the mojibake.
+        return claude_md.read_text(encoding='utf-8', errors='replace').strip()
 
     return ''

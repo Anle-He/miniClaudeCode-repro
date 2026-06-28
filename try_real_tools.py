@@ -1,4 +1,4 @@
-'''Stage-3 runner: drive the agent loop with the REAL tool set (bash / read_file / write_file).
+'''Stage-3 runner: drive the agent loop with the REAL tool set (bash / read_file / write_file / list_dir).
 
 Auth via env (DeepSeek's Anthropic-compatible endpoint):
   ANTHROPIC_BASE_URL = https://api.deepseek.com/anthropic
@@ -6,8 +6,8 @@ Auth via env (DeepSeek's Anthropic-compatible endpoint):
 
 Run:  python try_real_tools.py
 
-Note: the permission deny-list is NOT wired into the loop yet (stage 4), so bash runs
-unguarded. The task below only writes/reads one local temp file -- keep test tasks harmless.
+Note: as of stage 4 the PermissionGate IS wired into the loop; the default mode is ASK, so
+safe commands pass and an unsafe bash command prompts for confirmation. Keep test tasks harmless.
 '''
 
 from miniclaudecode.config import Config

@@ -45,7 +45,10 @@ class FileReadTool(Tool):
                 return ToolResult(output=f'Error: not a file: {filepath}', is_error=True)
             if filepath.stat().st_size > MAX_FILE_SIZE:
                 return ToolResult(output=f'Error: file too large (>{MAX_FILE_SIZE} bytes)', is_error=True)
-            lines = filepath.read_text(errors='replace').splitlines(keepends=True)
+            # encoding pinned to utf-8: on Windows read_text() defaults to the locale
+            # codepage (cp936/GBK), which mangles utf-8 files; errors='replace' only
+            # avoids a crash, not the mojibake.
+            lines = filepath.read_text(encoding='utf-8', errors='replace').splitlines(keepends=True)
 
             # offset is 1-based (floored at 1); limit is optional. Slice the requested window.
             offset = max(1, tool_input.get('offset', 1))

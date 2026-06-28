@@ -38,7 +38,9 @@ class FileWriteTool(Tool):
             filepath = Path(path).expanduser()
             content = tool_input.get('content', '')
             filepath.parent.mkdir(parents=True, exist_ok=True)  # create missing parent dirs
-            filepath.write_text(content)
+            # encoding pinned to utf-8 so writes round-trip with read_file (Windows
+            # write_text() would otherwise default to the cp936/GBK codepage).
+            filepath.write_text(content, encoding='utf-8')
             return ToolResult(output=f'Wrote {len(content)} chars to {filepath}')
         except Exception as exc:
             return ToolResult(output=f'Error writing file: {exc}', is_error=True)
