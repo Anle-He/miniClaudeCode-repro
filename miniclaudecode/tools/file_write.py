@@ -1,4 +1,4 @@
-'''FileWrite tool'''
+'''FileWrite tool -- write text to a file, creating parent directories as needed.'''
 
 from __future__ import annotations
 
@@ -24,18 +24,20 @@ class FileWriteTool(Tool):
             'properties': {
                 'path': {'type': 'string', 'description': 'Absolute or relative path to the file.'},
                 'content': {'type': 'string', 'description': 'The content to write.'},
-                },
-                'required': ['path', 'content'],
-            }
+            },
+            'required': ['path', 'content'],
+        }
 
     def execute(self, tool_input: dict[str, Any]) -> ToolResult:
+        # Everything -- path access, validation, parsing, write -- runs inside one try, so
+        # any failure becomes an is_error ToolResult and never raises into the agent loop.
         try:
             path = tool_input.get("path")
             if not path:
                 return ToolResult(output="Error: 'path' is required", is_error=True)
             filepath = Path(path).expanduser()
             content = tool_input.get("content", "")
-            filepath.parent.mkdir(parents=True, exist_ok=True)
+            filepath.parent.mkdir(parents=True, exist_ok=True)  # create missing parent dirs
             filepath.write_text(content)
             return ToolResult(output=f"Wrote {len(content)} chars to {filepath}")
         except Exception as exc:
