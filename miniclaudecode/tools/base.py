@@ -85,7 +85,15 @@ class ToolRegistry:
 
     @classmethod
     def default(cls) -> ToolRegistry:
-        # TODO (stage 3): import the concrete tools and register them here.
-        # The imports belong INSIDE this method on purpose -- the tool modules import
-        # Tool / ToolResult from this file, so a top-level import back would be circular.
-        ...
+        # Local imports (not at module top) to break the circular dependency: the tool
+        # modules import Tool / ToolResult from this file, so a top-level import back
+        # would form a cycle. Deferring to call time lets base.py finish loading first.
+        from .bash_tool import BashTool
+        from .file_read import FileReadTool
+        from .file_write import FileWriteTool
+        from .list_dir import ListDirTool
+
+        registry = cls()
+        for tool_cls in (BashTool, FileReadTool, FileWriteTool, ListDirTool):
+            registry.register(tool_cls())
+        return registry

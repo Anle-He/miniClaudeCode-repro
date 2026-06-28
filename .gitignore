@@ -10,3 +10,6 @@ build/
 venv/
 .uv-cache/
 .ruff_cache/
+
+# runner test artifacts
+_crucible_tool_test.txt

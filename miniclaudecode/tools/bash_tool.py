@@ -1,3 +1,5 @@
+'''Bash tool -- run a shell command via subprocess, with a deny-list safety self-check.'''
+
 from __future__ import annotations
 
 import subprocess
@@ -7,6 +9,8 @@ from .base import Tool, ToolResult
 
 
 class BashTool(Tool):
+    # Deny-list of obviously destructive commands. Substring match -- shallow and bypassable,
+    # a toy guard rather than real command security.
     DANGEROUS_PATTERNS = [
         'rm -rf /', 'rm -rf ~', 'sudo rm',
         'git push --force', 'git reset --hard',
@@ -39,6 +43,8 @@ class BashTool(Tool):
         }
 
     def check_permissions(self, params: dict[str, Any]) -> str | None:
+        # Layer-1 per-tool self-check: refuse commands hitting the deny-list.
+        # Defined here, but not yet invoked by the loop -- the permission system wires it in later.
         cmd = params.get('command', '')
         for pattern in self.DANGEROUS_PATTERNS:
             if pattern in cmd:
@@ -50,6 +56,7 @@ class BashTool(Tool):
         if not command.strip():
             return ToolResult(output='Error: empty command', is_error=True)
         try:
+            # shell=True allows pipes/globs/etc -- powerful, and the reason the deny-list exists.
             result = subprocess.run(
                 command,
                 shell=True,
@@ -66,6 +73,7 @@ class BashTool(Tool):
             output = '\n'.join(output_parts) or '(no output)'
             if len(output) > 50_000:
                 output = output[:50_000] + '\n... (truncated)'
+            # Non-zero exit = command ran but failed -> is_error (distinct from a Python exception).
             return ToolResult(output=output, is_error=result.returncode != 0)
         except subprocess.TimeoutExpired:
             return ToolResult(output='Error: command timed out after 120s', is_error=True)
