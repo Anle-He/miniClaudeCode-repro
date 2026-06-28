@@ -13,3 +13,4 @@ venv/
 
 # runner test artifacts
 _crucible_tool_test.txt
+note.txt
