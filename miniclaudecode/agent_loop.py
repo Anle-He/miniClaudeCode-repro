@@ -82,74 +82,74 @@ class AgentLoop:
         )
 
     def _parse_response(self, response: Any) -> tuple[list[dict], list[str]]:
-        """Extract tool_use blocks and text blocks from the API response."""
+        '''Extract tool_use blocks and text blocks from the API response.'''
         tool_calls: list[dict] = []
         text_parts: list[str] = []
 
         for block in response.content:
-            if block.type == "text":
+            if block.type == 'text':
                 text_parts.append(block.text)
                 sys.stdout.write(block.text)
                 sys.stdout.flush()
-            elif block.type == "tool_use":
+            elif block.type == 'tool_use':
                 tool_calls.append({
-                    "id": block.id,
-                    "name": block.name,
-                    "input": block.input,
+                    'id': block.id,
+                    'name': block.name,
+                    'input': block.input,
                 })
-                sys.stdout.write(f"\n[Tool: {block.name}] ")
+                sys.stdout.write(f'\n[Tool: {block.name}] ')
                 _input_preview = str(block.input)
                 if len(_input_preview) > 120:
-                    _input_preview = _input_preview[:120] + "..."
-                sys.stdout.write(f"{_input_preview}\n")
+                    _input_preview = _input_preview[:120] + '...'
+                sys.stdout.write(f'{_input_preview}\n')
                 sys.stdout.flush()
 
         return tool_calls, text_parts
 
     def _execute_tool_calls(self, tool_calls: list[dict]) -> None:
-        """Execute each tool call through the permission gate, append results."""
+        '''Execute each tool call through the permission gate, append results.'''
         tool_results = []
         for call in tool_calls:
-            tool = self.registry.get(call["name"])
+            tool = self.registry.get(call['name'])
             if tool is None:
                 tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": call["id"],
-                    "content": f"Error: unknown tool '{call['name']}'",
-                    "is_error": True,
+                    'type': 'tool_result',
+                    'tool_use_id': call['id'],
+                    'content': f"Error: unknown tool '{call['name']}'",
+                    'is_error': True,
                 })
                 continue
 
             # Permission check (2-layer gate)
-            denial = self.permission_gate.check(tool, call["input"])
+            denial = self.permission_gate.check(tool, call['input'])
             if denial is not None:
-                sys.stdout.write(f"  -> {denial.output}\n")
+                sys.stdout.write(f'  -> {denial.output}\n')
                 tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": call["id"],
-                    "content": denial.output,
-                    "is_error": True,
+                    'type': 'tool_result',
+                    'tool_use_id': call['id'],
+                    'content': denial.output,
+                    'is_error': True,
                 })
                 continue
 
             # Execute the tool
-            result = tool.execute(call["input"])
+            result = tool.execute(call['input'])
             output_preview = result.output
             if len(output_preview) > 300:
-                output_preview = output_preview[:300] + "..."
-            status = "ERROR" if result.is_error else "OK"
-            sys.stdout.write(f"  -> [{status}] {output_preview}\n")
+                output_preview = output_preview[:300] + '...'
+            status = 'ERROR' if result.is_error else 'OK'
+            sys.stdout.write(f'  -> [{status}] {output_preview}\n')
             sys.stdout.flush()
 
             tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": call["id"],
-                "content": result.output,
-                "is_error": result.is_error,
+                'type': 'tool_result',
+                'tool_use_id': call['id'],
+                'content': result.output,
+                'is_error': result.is_error,
             })
 
         # Append all tool results as a single user message (Anthropic API format)
         self.context.messages.append({
-            "role": "user",
-            "content": tool_results,
+            'role': 'user',
+            'content': tool_results,
         })
