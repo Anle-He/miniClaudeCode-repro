@@ -1,62 +1,91 @@
-# STAGE-2 STUB -- replaced by the real tool system in stage 3.
-'''Tool system (stub): just enough for the agent loop to run with one fake tool.
+'''Tool system: the Tool contract (ABC) + ToolRegistry (register / name-dispatch / api_schemas).
 
-Provides only what agent_loop.py calls:
-  ToolRegistry.default() / .api_schemas() / .get(name)
-  tool.execute(input) -> ToolResult(.output, .is_error)
+Concrete tools (bash / file_read / file_write / ...) subclass Tool and get registered here;
+the registry hands their schemas to the model and looks them up by name at call time.
 '''
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
 
-@dataclass
+@dataclass(frozen=True)
 class ToolResult:
+    # Uniform return shape for every tool; frozen so a result can't be mutated after the fact.
     output: str
     is_error: bool = False
 
 
-class WeatherTool:
-    '''Fake tool: pretends to look up the weather for a city.
+class Tool(ABC):
+    '''The contract every tool must satisfy.
 
-    Picked because the model cannot know real-time weather, so it will
-    reliably emit a tool_use -- which is what makes the loop actually loop.
+    Abstract members differ per tool and MUST be implemented; the concrete methods
+    (to_api_schema / check_permissions) are shared defaults inherited for free.
     '''
 
-    name = 'get_weather'
+    # name / description / input_schema are packed into the tool definition sent to the
+    # model via the API's `tools=` parameter -- this is how the model learns which tools
+    # exist and how to call each one. Hence they are abstract: every tool defines its own.
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        ...
+
+    @property
+    @abstractmethod
+    def description(self) -> str:
+        ...
+
+    @property
+    @abstractmethod
+    def input_schema(self) -> dict[str, Any]:
+        ...
+
+    def check_permissions(self, params: dict[str, Any]) -> str | None:
+        '''Per-tool permission self-check. Return None if allowed, or a denial reason string.'''
+        # Default: allow. A tool overrides this only if it needs to guard its own operations.
+        return None
+
+    @abstractmethod
+    def execute(self, tool_input: dict) -> ToolResult:
+        # The actual work; each concrete tool implements its own.
+        ...
 
     def to_api_schema(self) -> dict:
+        # Pack the three descriptors into the dict shape the API expects under `tools=`.
         return {
             'name': self.name,
-            'description': 'Get the current weather for a given city.',
-            'input_schema': {
-                'type': 'object',
-                'properties': {
-                    'city': {'type': 'string', 'description': 'City name'},
-                },
-                'required': ['city'],
-            },
+            'description': self.description,
+            'input_schema': self.input_schema,
         }
-
-    def execute(self, tool_input: dict) -> ToolResult:
-        city = tool_input.get('city', 'somewhere')
-        return ToolResult(output=f'Sunny, about 25 degrees Celsius in {city}.')
 
 
 class ToolRegistry:
-    '''Holds tools by name; produces API schemas and looks tools up.'''
+    '''Holds tools keyed by name; produces API schemas and looks tools up by name.'''
 
     def __init__(self, tools: list | None = None) -> None:
+        # name -> Tool. Accept an initial list, or build up incrementally via register().
         self._tools = {tool.name: tool for tool in (tools or [])}
+
+    def register(self, tool: Tool) -> None:
+        self._tools[tool.name] = tool
+
+    def get(self, name: str) -> Any:
+        # Name dispatch: the model emits a tool_use name; map it back to the instance.
+        return self._tools.get(name)
+
+    def all_tools(self) -> list[Tool]:
+        return list(self._tools.values())
+
+    def api_schemas(self) -> list[dict[str, Any]]:
+        # Collect every registered tool's schema for the `tools=` API parameter.
+        return [tool.to_api_schema() for tool in self._tools.values()]
 
     @classmethod
     def default(cls) -> ToolRegistry:
-        return cls([WeatherTool()])
-
-    def get(self, name: str) -> Any:
-        return self._tools.get(name)
-
-    def api_schemas(self) -> list[dict]:
-        return [tool.to_api_schema() for tool in self._tools.values()]
+        # TODO (stage 3): import the concrete tools and register them here.
+        # The imports belong INSIDE this method on purpose -- the tool modules import
+        # Tool / ToolResult from this file, so a top-level import back would be circular.
+        ...
