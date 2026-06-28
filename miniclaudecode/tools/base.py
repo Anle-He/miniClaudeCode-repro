@@ -88,12 +88,13 @@ class ToolRegistry:
         # Local imports (not at module top) to break the circular dependency: the tool
         # modules import Tool / ToolResult from this file, so a top-level import back
         # would form a cycle. Deferring to call time lets base.py finish loading first.
+        from .append_file import AppendFileTool
         from .bash_tool import BashTool
         from .file_read import FileReadTool
         from .file_write import FileWriteTool
         from .list_dir import ListDirTool
 
         registry = cls()
-        for tool_cls in (BashTool, FileReadTool, FileWriteTool, ListDirTool):
+        for tool_cls in (BashTool, FileReadTool, FileWriteTool, AppendFileTool, ListDirTool):
             registry.register(tool_cls())
         return registry

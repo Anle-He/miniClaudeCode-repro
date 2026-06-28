@@ -46,7 +46,7 @@ class PermissionGate:
         # PLAN = read-only: block write-capable tools BY NAME (never inspects the command),
         # so even a harmless `bash: ls` is refused simply for being the bash tool.
         if mode == PermissionMode.PLAN:
-            write_tools = {'bash', 'write_file'}
+            write_tools = {'bash', 'write_file', 'append_file'}
             if tool.name in write_tools:
                 return ToolResult(
                     output=f"Permission denied: '{tool.name}' is blocked in plan (read-only) mode.",

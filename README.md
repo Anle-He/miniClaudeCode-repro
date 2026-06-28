@@ -53,6 +53,12 @@
 
 至此五个学习阶段全部完成，`cli.py` 把 context / loop / tools / permissions / prompt 串成可在终端整机运行的 mini agent。
 
+**终测 · 跨阶段综合**
+
+| 文件 | 作用 |
+| --- | --- |
+| `miniclaudecode/tools/append_file.py` | `AppendFileTool`：往文件尾部追加文本（不覆盖，`mode 'a'` + UTF-8）。跨阶段综合产物——新增工具 → `default()` 注册 → 加入 `PermissionGate` 的 `write_tools`（PLAN 下被拦）→ 由 agent 在两步任务中调起，验证整条链路。 |
+
 ## 运行
 
 直接依赖仅 `anthropic`。推荐用 [uv](https://github.com/astral-sh/uv) 管理环境：

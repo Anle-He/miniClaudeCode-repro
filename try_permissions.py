@@ -21,6 +21,7 @@ if not sys.stdin.isatty():
 # (label, tool_name, params) probes covering reads, writes, and bash variants.
 PROBES = [
     ('write_file', 'write_file', {'path': 'out.txt', 'content': 'hi'}),
+    ('append_file', 'append_file', {'path': 'out.txt', 'content': 'hi'}),
     ('list_dir (read)', 'list_dir', {'path': '.'}),
     ('bash: ls (safe)', 'bash', {'command': 'ls'}),
     ('bash: rm -rf / (dangerous)', 'bash', {'command': 'rm -rf /'}),
