@@ -32,13 +32,13 @@ class FileWriteTool(Tool):
         # Everything -- path access, validation, parsing, write -- runs inside one try, so
         # any failure becomes an is_error ToolResult and never raises into the agent loop.
         try:
-            path = tool_input.get("path")
+            path = tool_input.get('path')
             if not path:
                 return ToolResult(output="Error: 'path' is required", is_error=True)
             filepath = Path(path).expanduser()
-            content = tool_input.get("content", "")
+            content = tool_input.get('content', '')
             filepath.parent.mkdir(parents=True, exist_ok=True)  # create missing parent dirs
             filepath.write_text(content)
-            return ToolResult(output=f"Wrote {len(content)} chars to {filepath}")
+            return ToolResult(output=f'Wrote {len(content)} chars to {filepath}')
         except Exception as exc:
-            return ToolResult(output=f"Error writing file: {exc}", is_error=True)
+            return ToolResult(output=f'Error writing file: {exc}', is_error=True)
