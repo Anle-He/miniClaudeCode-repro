@@ -29,7 +29,9 @@ class AgentLoop:
             registry: ToolRegistry | None = None,
     ) -> None:
         self.config = config or Config()
-        self.client = anthropic.Anthropic()
+        # max_retries lets the SDK retry transient errors (connection / 429 / 5xx),
+        # the s01 "continue path"; permanent 4xx are not retried by the SDK either.
+        self.client = anthropic.Anthropic(max_retries=self.config.max_retries)
 
         self.registry = registry or ToolRegistry.default()
         self.permission_gate = PermissionGate(self.config)
