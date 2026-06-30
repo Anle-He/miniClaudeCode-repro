@@ -143,10 +143,20 @@ class AgentLoop:
             sys.stdout.write(f'  -> [{status}] {output_preview}\n')
             sys.stdout.flush()
 
+            # Cap oversized output before feeding it back into context: a huge bash/list_dir
+            # dump would otherwise bloat messages. CC writes overflow to a file + preview; we
+            # just truncate (no spill file, so no read->spill->read cascade to guard against).
+            content = result.output
+            if len(content) > self.config.max_output_chars:
+                cap = self.config.max_output_chars
+                content = content[:cap] + (
+                    f'\n[output truncated: showing first {cap} of {len(result.output)} chars]'
+                )
+
             tool_results.append({
                 'type': 'tool_result',
                 'tool_use_id': call['id'],
-                'content': result.output,
+                'content': content,
                 'is_error': result.is_error,
             })
 

@@ -21,7 +21,7 @@ class Config:
     model: str = 'claude-sonnet-4-6'
     max_turns: int = 30                 # max agent-loop turns per user message
     max_context_messages: int = 100     # truncation threshold in ConversationContext
-    max_output_chars: int = 50_000
+    max_output_chars: int = 50_000     # cap on a single tool result fed back to context; over this it is truncated
     max_retries: int = 3                # passed to the Anthropic client to retry transient errors
     permission_mode: PermissionMode = PermissionMode.ASK
     # ASK-mode safe-command allow-list: PermissionGate._is_safe_command lets a bash
