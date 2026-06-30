@@ -4,6 +4,48 @@
 
 > 目标是逐步复现一个具备 agent loop + 工具调用 + 权限 + 多轮上下文管理的 mini agent。本仓库按阶段提交，五个学习阶段已全部落地（地基 → 主循环 → 工具系统 → 权限 → prompt/CLI 收口），现可经 `cli.py` 在终端整机运行。
 
+## 核心循环
+
+整个仓库复现的就是这一个循环：
+
+```
+                 User prompt
+                      |
+                      v
+       +------------------------------+ <--------------------+
+       |     ConversationContext      |                      |
+       |     (messages 累积 / 截断)     |  tool_result /       |
+       +---------------+--------------+  deny 回灌            |
+                       | 全量 messages                       |
+                       v                                     |
+                   +-------+                                 |
+                   |  LLM  |                                 |
+                   +---+---+                                 |
+                       |                                     |
+                  tool_use ?                                 |
+                    /       \                                |
+                 no          yes                             |
+                  |           |                              |
+                  v           v                              |
+           +-----------+  +----------------+                 |
+           |  reply to |  | PermissionGate |                 |
+           |    User   |  | ASK/AUTO/PLAN  |                 |
+           +-----------+  +-------+--------+                 |
+                          allow   | deny --------------------+
+                                  v                          |
+                            +-----------+                    |
+                            |   Tool    | bash/read/write/   |
+                            |  execute  | list/append        |
+                            +-----+-----+                    |
+                                  | tool_result              |
+                                  +--------------------------+
+                                       loop continues
+```
+
+`ConversationContext` 是循环的中枢：用户输入、assistant 的 `tool_use`、工具回来的 `tool_result` 全累积在它的 messages 里，每轮把全量 messages 喂给 LLM——它是模型唯一的运行时通道（超 `max_context` 时截断早期消息）。
+
+驱动循环往下转的是模型吐出的 `tool_use`。模型某轮**不再请求工具、只回纯文本**时，循环跳出、那段文本即最终答复返回 User；只要还有 `tool_use`，就先过 `PermissionGate`（工具自检 + ASK/AUTO/PLAN 模式）：放行则执行工具、把 `tool_result` 回灌 Context 进入下一轮，拒绝则不执行、把 deny 结果回灌让模型改道。`max_turns` 给单条用户输入内部的循环轮数封顶，兜底防止反复调工具转不停。
+
 ## 当前内容
 
 **阶段一 · 地基**
@@ -61,38 +103,46 @@
 
 ## 运行
 
-直接依赖仅 `anthropic`。推荐用 [uv](https://github.com/astral-sh/uv) 管理环境：
+依赖为 `anthropic` 与 `python-dotenv`。推荐用 [uv](https://github.com/astral-sh/uv) 管理环境，一条命令按 `pyproject.toml` / `uv.lock` 装齐：
 
 ```powershell
-uv venv
-.\.venv\Scripts\activate
-uv pip install anthropic
+uv sync
 ```
 
-设置认证（**密钥只放环境变量，代码里不硬编码**）：
+设置认证（**密钥只放 `.env`，不进 git、代码里不硬编码**）。复制示例文件并填入真实值：
 
 ```powershell
-$env:ANTHROPIC_API_KEY = "your-api-key"
-# 可选：指向 Anthropic 兼容端点（例如 DeepSeek）
-$env:ANTHROPIC_BASE_URL = "https://api.deepseek.com/anthropic"
+copy .env-example .env
+# 然后编辑 .env：
+#   ANTHROPIC_API_KEY=your-api-key
+#   可选，指向 Anthropic 兼容端点（例如 DeepSeek）：
+#   ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic
+```
+
+CLI 启动时会自动 `load_dotenv()` 加载 `.env`，无需手动 export。`.env` 已被 `.gitignore` 忽略。
+
+交互式 CLI（自动加载 `.env`）：
+
+```powershell
+uv run python -m miniclaudecode.cli
 ```
 
 运行单轮 demo（阶段一）：
 
 ```powershell
-python try_single_turn.py
+uv run python try_single_turn.py
 ```
 
 运行 agent loop demo（阶段二，现跑真实工具集）：
 
 ```powershell
-python try_agent_loop.py
+uv run python try_agent_loop.py
 ```
 
 运行真工具 demo（阶段三，bash / read / write / list_dir）：
 
 ```powershell
-python try_real_tools.py
+uv run python try_real_tools.py
 ```
 
 运行权限矩阵（阶段四，无需 API key）：

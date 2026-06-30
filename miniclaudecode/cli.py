@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import sys
 
+from dotenv import load_dotenv
+
 from .agent_loop import AgentLoop
 from .config import Config, PermissionMode
 from .tools.base import ToolRegistry
@@ -97,6 +99,8 @@ def run_interactive(agent: AgentLoop) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Load .env into os.environ before the Anthropic client reads its credentials.
+    load_dotenv()
     parser = build_parser()
     args = parser.parse_args(argv)
 

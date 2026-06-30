@@ -12,11 +12,13 @@ from typing import cast
 
 import anthropic
 from anthropic.types import MessageParam, TextBlock
+from dotenv import load_dotenv
 
 from miniclaudecode.config import Config
 from miniclaudecode.context import ConversationContext
 
 
+load_dotenv()  # load .env so the Anthropic client picks up credentials
 client = anthropic.Anthropic()
 
 cfg = Config()

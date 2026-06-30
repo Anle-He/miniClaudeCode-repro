@@ -10,8 +10,12 @@ Note: as of stage 4 the PermissionGate IS wired into the loop; the default mode 
 safe commands pass and an unsafe bash command prompts for confirmation. Keep test tasks harmless.
 '''
 
+from dotenv import load_dotenv
+
 from miniclaudecode.config import Config
 from miniclaudecode.agent_loop import AgentLoop
+
+load_dotenv()  # load .env so the Anthropic client picks up credentials
 
 cfg = Config()
 cfg.model = 'deepseek-chat'
